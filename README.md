@@ -29,23 +29,6 @@ Just cognition.
 
 ---
 
-# Why CognitiveOS?
-
-Modern software already has tools.
-
-You have:
-
-- APIs
-- Python libraries
-- OpenClaw agents
-- n8n workflows
-- robots
-- automation services
-
-The missing piece isn't another workflow engine.
-
-The missing piece is **decision making**.
-
 # Why CognitiveOS Exists
 
 Today's AI frameworks are incredibly good at executing plans.
