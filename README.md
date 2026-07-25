@@ -2,30 +2,21 @@
 
 > **The cognitive runtime for autonomous software.**
 
-CognitiveOS is the cognitive runtime that lets your existing capabilities, OpenClaw agents, and n8n workflows reason, plan, and execute together.
-
-CognitiveOS gives software the ability to **observe**, **reason**, **plan**, and **execute**.
-
-Unlike workflow engines and agent orchestrators, CognitiveOS doesn't tell your software **how** to execute—it decides **what should happen next**. When a request arrives, the planner builds the graph dynamically.
-
-
+CognitiveOS is the cognitive runtime that lets your existing capabilities, OpenClaw agents, and n8n workflows reason, plan, and execute together. CognitiveOS gives software the ability to **observe**, **reason**, **plan**, and **execute**. Unlike workflow engines and agent orchestrators, CognitiveOS doesn't tell your software **how** to execute—it decides **what should happen next**. When a request arrives, the planner builds the graph dynamically.
 
 
 ## A Different Approach
 
-What if the execution graph didn't exist until someone asked a question?
+think about it !
 
-What if planning was separated from execution?
+1. What if the execution graph didn't exist until someone asked a question?
+2. What if planning was separated from execution?
+3. What if execution was separated from tools?
+4. What if every request produced its own execution graph?
+5. What if instead of designing workflows, developers register capabilities , agents or tools 
+6. What if instead of wiring graphs, developers describe what their software can do.
 
-What if execution was separated from tools?
-
-What if every request produced its own execution graph?
-
-Instead of designing workflows, developers register capabilities.
-
-Instead of wiring graphs, developers describe what their software can do.
-
-Use it to orchestrate:
+Developers could Use it to orchestrate:
 
 - 🐍 Native Python capabilities
 - 🤖 OpenClaw agents
