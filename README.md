@@ -6,7 +6,24 @@ CognitiveOS is the cognitive runtime that lets your existing capabilities, OpenC
 
 CognitiveOS gives software the ability to **observe**, **reason**, **plan**, and **execute**.
 
-Unlike workflow engines and agent orchestrators, CognitiveOS doesn't tell your software **how** to execute—it decides **what should happen next**.
+Unlike workflow engines and agent orchestrators, CognitiveOS doesn't tell your software **how** to execute—it decides **what should happen next**. When a request arrives, the planner builds the graph dynamically.
+
+
+
+
+## A Different Approach
+
+What if the execution graph didn't exist until someone asked a question?
+
+What if planning was separated from execution?
+
+What if execution was separated from tools?
+
+What if every request produced its own execution graph?
+
+Instead of designing workflows, developers register capabilities.
+
+Instead of wiring graphs, developers describe what their software can do.
 
 Use it to orchestrate:
 
@@ -103,26 +120,32 @@ The runtime decides *how* to execute the plan.
 
 **Capabilities**
 
+The execution graph is no longer something you write.
+
+It's something the runtime creates.
+
+
+
 Your existing software performs the work.
 
 ```
-                User Goal
-                     │
-                     ▼
-                 LLM Planner
-                     │
-          Creates Execution Graph
-                     │
-                     ▼
-             CognitiveOS Runtime
-                     │
-                     ▼
-           Capability Selection
-                     │
-      ┌──────────────┼──────────────┐
-      ▼              ▼              ▼
- Python Code    OpenClaw Agents   n8n Workflows
+             User Goal
+                  │
+                  ▼
+             LLM Planner
+                  │
+      Generates Execution Graph
+                  │
+                  ▼
+          CognitiveOS Kernel
+                  │
+                  ▼
+         Deterministic Execution
+                  │
+                  ▼
+      Python • OpenClaw • n8n • REST
 ```
+
 
 Nothing is hardcoded.
 
