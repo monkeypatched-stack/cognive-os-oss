@@ -390,15 +390,15 @@ pip install cognitiveos
 
 # Documentation
 
-- Getting Started
-- Architecture Guide
-- Examples
-- API Reference
-- OpenClaw Integration
-- n8n Integration
-- Building Capabilities
-- Building Agents
-- Contributing
+- [Getting Started](docs/getting-started.md) — install, quick start, first steps
+- [Architecture Guide](docs/architecture.md) — design principles, components, execution modes
+- [Examples](docs/examples.md) — runnable examples for every integration pattern
+- [API Reference](docs/api-reference.md) — types, interfaces, exceptions
+- [Building Capabilities](docs/building-capabilities.md) — add custom capabilities
+- [Building Agents](docs/building-agents.md) — add custom agents
+- [OpenClaw Integration](docs/openclaw-integration.md) — agent backed by OpenClaw CLI
+- [n8n Integration](docs/n8n-integration.md) — agent backed by n8n workflows
+- [Contributing](docs/contributing.md) — development setup, code style, submitting changes
 
 # Note: This is the opensource version 
 
