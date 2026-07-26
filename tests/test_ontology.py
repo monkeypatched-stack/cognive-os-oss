@@ -1,10 +1,9 @@
 """Tests for CognitiveOS ontology hierarchy."""
-import pytest
-from cognitiveos.ontology.core.world import ALL_WORLD
 from cognitiveos.ontology.core.actor import ALL_ACTOR
-from cognitiveos.ontology.core.cognition import ALL_GOALS, ALL_BELIEFS
-from cognitiveos.ontology.core.social import ALL_AFFILIATIONS
 from cognitiveos.ontology.core.capability import ALL_CAPABILITIES
+from cognitiveos.ontology.core.cognition import ALL_BELIEFS, ALL_GOALS
+from cognitiveos.ontology.core.social import ALL_AFFILIATIONS
+from cognitiveos.ontology.core.world import ALL_WORLD
 
 
 class TestOntologyHierarchy:

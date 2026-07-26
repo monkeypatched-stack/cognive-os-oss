@@ -4,6 +4,7 @@ All external dependencies are injected through these interfaces.
 The runtime depends only on interfaces, never on concrete implementations.
 """
 from __future__ import annotations
+
 from typing import Any, Protocol, runtime_checkable
 
 

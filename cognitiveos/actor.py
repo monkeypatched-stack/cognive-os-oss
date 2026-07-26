@@ -319,13 +319,13 @@ class Actor:
             return None
         return self._os.world()
 
-    def send_message(self, to: str, msg_type: str, payload: dict = None) -> bool:
+    def send_message(self, to: str, msg_type: str, payload: dict | None = None) -> bool:
         """Send a message to another actor. Trust-enforced by OS."""
         if self._os is None:
             return False
         return self._os.send_message(to, msg_type, payload)
 
-    def broadcast(self, msg_type: str, payload: dict = None) -> int:
+    def broadcast(self, msg_type: str, payload: dict | None = None) -> int:
         """Broadcast to all peers. Trust-enforced by OS."""
         if self._os is None:
             return 0

@@ -10,30 +10,69 @@ Usage:
     os.set_actor(actor)
     result = await os.run("Book me a flight to Berlin")
 """
-from .version import __version__
-from .actor import Actor, Identity, GoalState, BeliefState as ActorBelief, CapabilityState, ResourceState
-from .os import CognitiveOS, GoalEvaluation, CapabilityMatch, ResourceCheck, DecisionSynthesis, ParsedIntent, RunResult, StepResult
-from .interfaces import ICognitiveEngine, ITransitionModel, IMessageBus, IWorldProvider, ITrustProvider
+from .actor import Actor, CapabilityState, GoalState, Identity, ResourceState
+from .actor import BeliefState as ActorBelief
+from .affiliations import Affiliation, AffiliationManager, TrustEngine
+from .agent_bus import AgentBus
+from .agents import Agent, AgentRegistry, AgentResult, Provider
+from .capability_bus import CapabilityBus
 from .exceptions import (
-    CognitiveOSError, ActorNotBoundError, EngineNotInjectedError,
-    TrustViolationError, InvalidActorError, DuplicateActorError,
+    ActorNotBoundError,
+    CognitiveOSError,
+    DuplicateActorError,
+    EngineNotInjectedError,
+    InvalidActorError,
+    TrustViolationError,
+)
+from .interfaces import ICognitiveEngine, IMessageBus, ITransitionModel, ITrustProvider, IWorldProvider
+from .os import (
+    CapabilityMatch,
+    CognitiveOS,
+    DecisionSynthesis,
+    GoalEvaluation,
+    ParsedIntent,
+    ResourceCheck,
+    RunResult,
+    StepResult,
 )
 from .protocol import ActorProtocol
-from .agents import Agent, AgentResult, Provider, AgentRegistry
-from .affiliations import AffiliationManager, TrustEngine, Affiliation
-from .capability_bus import CapabilityBus
-from .agent_bus import AgentBus
+from .version import __version__
 
 __all__ = [
-    "__version__",
-    "Actor", "Identity", "GoalState", "ActorBelief", "CapabilityState", "ResourceState",
-    "CognitiveOS", "GoalEvaluation", "CapabilityMatch", "ResourceCheck", "DecisionSynthesis",
-    "ParsedIntent", "RunResult", "StepResult",
-    "ICognitiveEngine", "ITransitionModel", "IMessageBus", "IWorldProvider", "ITrustProvider",
-    "CognitiveOSError", "ActorNotBoundError", "EngineNotInjectedError",
-    "TrustViolationError", "InvalidActorError", "DuplicateActorError",
+    "Actor",
+    "ActorBelief",
+    "ActorNotBoundError",
     "ActorProtocol",
-    "Agent", "AgentResult", "Provider", "AgentRegistry",
-    "AffiliationManager", "TrustEngine", "Affiliation",
-    "CapabilityBus", "AgentBus",
+    "Affiliation",
+    "AffiliationManager",
+    "Agent",
+    "AgentBus",
+    "AgentRegistry",
+    "AgentResult",
+    "CapabilityBus",
+    "CapabilityMatch",
+    "CapabilityState",
+    "CognitiveOS",
+    "CognitiveOSError",
+    "DecisionSynthesis",
+    "DuplicateActorError",
+    "EngineNotInjectedError",
+    "GoalEvaluation",
+    "GoalState",
+    "ICognitiveEngine",
+    "IMessageBus",
+    "ITransitionModel",
+    "ITrustProvider",
+    "IWorldProvider",
+    "Identity",
+    "InvalidActorError",
+    "ParsedIntent",
+    "Provider",
+    "ResourceCheck",
+    "ResourceState",
+    "RunResult",
+    "StepResult",
+    "TrustEngine",
+    "TrustViolationError",
+    "__version__",
 ]

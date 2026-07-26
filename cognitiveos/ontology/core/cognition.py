@@ -3,9 +3,10 @@
 What actors know and want. Goals, beliefs, reasoning.
 """
 from __future__ import annotations
-from dataclasses import dataclass, field
-from ..base import OntologyType
 
+from dataclasses import dataclass, field
+
+from ..base import OntologyType
 
 # ── Goals ────────────────────────────────────────────────────
 

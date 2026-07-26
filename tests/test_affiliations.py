@@ -1,10 +1,9 @@
 """Tests for CognitiveOS affiliations and trust."""
-import pytest
-from cognitiveos.affiliations.trust import TrustEngine
 from cognitiveos.affiliations.affiliation import Affiliation
-from cognitiveos.affiliations.family import FamilyAffiliation
 from cognitiveos.affiliations.employment import EmploymentAffiliation
+from cognitiveos.affiliations.family import FamilyAffiliation
 from cognitiveos.affiliations.manager import AffiliationManager
+from cognitiveos.affiliations.trust import TrustEngine
 
 
 class TestTrustEngine:
@@ -39,6 +38,30 @@ class TestTrustEngine:
         te.update_from_outcome("alice", "bob", goal_achieved=False)
         after_bad = te.get_trust("alice", "bob")
         assert (0.5 - after_bad) > (after_good - 0.5)
+
+
+class TestAffiliationTypeInfoFallback:
+    """An affiliation_type not in the ontology's ALL_TYPES registry falls
+    back to None/defaults rather than raising."""
+
+    def test_unknown_type_info_is_none(self):
+        a = Affiliation(
+            affiliation_id="a1", affiliation_type="totally_made_up",
+            target_id="t1", target_name="T1", metadata={},
+        )
+        assert a.type_info is None
+        assert a.category is None
+        assert a.cardinality is None
+        assert a.is_bidirectional is True
+        assert a.default_permissions == ()
+
+    def test_known_type_info_resolves(self):
+        a = Affiliation(
+            affiliation_id="a1", affiliation_type="family",
+            target_id="t1", target_name="T1", metadata={},
+        )
+        assert a.type_info is not None
+        assert a.category == "personal"
 
 
 class TestAffiliationManager:

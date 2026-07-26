@@ -3,7 +3,9 @@
 What actors are. The types that define entity identity.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
+
 from ..base import OntologyType
 
 

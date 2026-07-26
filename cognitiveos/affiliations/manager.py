@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 import logging
-from typing import Any
+from typing import Any, ClassVar
+
 from .affiliation import Affiliation
 from .trust import TrustEngine
 
@@ -161,7 +163,9 @@ class AffiliationManager:
     def active(self) -> list[Affiliation]:
         """Affiliations that are not expired."""
         import datetime
-        now = datetime.date.today().isoformat()
+        # UTC, not a naive local date — valid_until comparisons shouldn't
+        # depend on the server's local timezone.
+        now = datetime.datetime.now(tz=datetime.UTC).date().isoformat()
         return [a for a in self._affiliations.values()
                 if not a.valid_until or a.valid_until >= now]
 
@@ -169,7 +173,7 @@ class AffiliationManager:
     # Discovery
     # ──────────────────────────────────────────────────────────
 
-    _GOAL_AFFILIATION_MAP: dict[str, list[str]] = {
+    _GOAL_AFFILIATION_MAP: ClassVar[dict[str, list[str]]] = {
         # Organizational
         "job":       ["employment", "contractor"],
         "work":      ["employment", "contractor"],
@@ -274,9 +278,9 @@ class AffiliationManager:
     def to_dict(self) -> dict[str, Any]:
         """Serialize to JSON-safe dict. Enables persistence, cloud sync,
         REST, GraphQL, and checkpointing."""
-        from .family import FamilyAffiliation
-        from .employment import EmploymentAffiliation
         from .education import EducationAffiliation
+        from .employment import EmploymentAffiliation
+        from .family import FamilyAffiliation
 
         affiliations_data = []
         for a in self._affiliations.values():
@@ -317,9 +321,9 @@ class AffiliationManager:
     def from_dict(cls, data: dict[str, Any],
                   trust_engine: TrustEngine | None = None) -> AffiliationManager:
         """Deserialize from dict, preserving subclass types."""
-        from .family import FamilyAffiliation
-        from .employment import EmploymentAffiliation
         from .education import EducationAffiliation
+        from .employment import EmploymentAffiliation
+        from .family import FamilyAffiliation
 
         _SUBCLASS_MAP: dict[str, type] = {
             "family": FamilyAffiliation,
@@ -332,19 +336,19 @@ class AffiliationManager:
             aff_type = ad.get("affiliation_type", "")
             subclass = _SUBCLASS_MAP.get(aff_type, Affiliation)
 
-            base_fields = dict(
-                affiliation_id=ad["affiliation_id"],
-                affiliation_type=aff_type,
-                target_id=ad["target_id"],
-                target_name=ad["target_name"],
-                trust_level=ad.get("trust_level", 0.5),
-                permissions=tuple(ad.get("permissions", [])),
-                policies=tuple(ad.get("policies", [])),
-                priority=ad.get("priority", 0),
-                valid_from=ad.get("valid_from", ""),
-                valid_until=ad.get("valid_until", ""),
-                metadata=ad.get("metadata", {}),
-            )
+            base_fields = {
+                "affiliation_id": ad["affiliation_id"],
+                "affiliation_type": aff_type,
+                "target_id": ad["target_id"],
+                "target_name": ad["target_name"],
+                "trust_level": ad.get("trust_level", 0.5),
+                "permissions": tuple(ad.get("permissions", [])),
+                "policies": tuple(ad.get("policies", [])),
+                "priority": ad.get("priority", 0),
+                "valid_from": ad.get("valid_from", ""),
+                "valid_until": ad.get("valid_until", ""),
+                "metadata": ad.get("metadata", {}),
+            }
 
             if subclass is FamilyAffiliation:
                 aff = FamilyAffiliation(

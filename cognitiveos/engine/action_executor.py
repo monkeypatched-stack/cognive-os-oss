@@ -26,7 +26,9 @@ import time
 from typing import Any
 
 from cognitiveos.engine.execution import (
-    Action, ActionOutcome, ExecutionResult,
+    Action,
+    ActionOutcome,
+    ExecutionResult,
 )
 
 logger = logging.getLogger("agentos.pipeline.action_executor")

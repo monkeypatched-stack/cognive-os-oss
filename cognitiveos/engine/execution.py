@@ -11,7 +11,7 @@ The ExecutionEngine discovers and invokes capabilities via the CapabilityBus.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 
 @dataclass(frozen=True)

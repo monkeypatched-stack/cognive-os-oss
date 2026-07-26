@@ -45,17 +45,23 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
 from dataclasses import dataclass
+from typing import Any, ClassVar
 
-from cognitiveos.capability_bus import CapabilityBus
 from cognitiveos.agent_bus import AgentBus
-from cognitiveos.engine.lightweight_engine import LightweightCognitiveEngine
+from cognitiveos.capability_bus import CapabilityBus
 from cognitiveos.engine.action_executor import ActionExecutor
+from cognitiveos.engine.lightweight_engine import LightweightCognitiveEngine
 
 logger = logging.getLogger("agentos.cognitive_os")
 
 TRUST_COMMUNICATION_THRESHOLD = 0.3
+
+# Cap on the local (no society_runtime) message bus — without a bound, a
+# long-running actor sending many messages would grow this list forever,
+# since get_messages() only reads it and never removes entries. Oldest
+# messages are dropped first once the cap is hit.
+MAX_LOCAL_MESSAGE_BUS = 1000
 
 
 @dataclass
@@ -274,7 +280,7 @@ class CognitiveOS:
     # ── Messaging (trust-enforced) ───────────────────────────
 
     def send_message(self, to_actor: str, msg_type: str,
-                     payload: dict = None) -> bool:
+                     payload: dict | None = None) -> bool:
         if not self._check_trust(to_actor):
             logger.warning(
                 "Message BLOCKED: %s → %s (trust=%.2f < %.2f)",
@@ -290,6 +296,8 @@ class CognitiveOS:
                 "from": self._actor.entity_id if self._actor else "?",
                 "to": to_actor, "type": msg_type, "payload": payload or {},
             })
+            if len(self._message_bus) > MAX_LOCAL_MESSAGE_BUS:
+                del self._message_bus[:-MAX_LOCAL_MESSAGE_BUS]
             return True
 
         self._society_runtime.send_message(
@@ -297,7 +305,7 @@ class CognitiveOS:
         )
         return True
 
-    def broadcast(self, msg_type: str, payload: dict = None) -> int:
+    def broadcast(self, msg_type: str, payload: dict | None = None) -> int:
         if self._society_runtime is None:
             return 0
 
@@ -337,7 +345,7 @@ class CognitiveOS:
         return filtered
 
     def transition(self) -> Any:
-        return self._get_transition_model()
+        return self._transition_model
 
     # ── Reasoning ────────────────────────────────────────────
 
@@ -437,7 +445,7 @@ class CognitiveOS:
                 matches.extend(self._match_for_goal(goal.goal_type_id, capabilities))
         return matches
 
-    def check_resources(self, required: dict[str, float] = None) -> list[ResourceCheck]:
+    def check_resources(self, required: dict[str, float] | None = None) -> list[ResourceCheck]:
         """Check if the actor has required resources."""
         if self._actor is None:
             return []
@@ -510,7 +518,7 @@ class CognitiveOS:
 
     # ── Natural Language Task Execution ──────────────────────
 
-    _INTENT_ACTION_MAP = {
+    _INTENT_ACTION_MAP: ClassVar[dict[str, str]] = {
         "book": "travel",
         "buy": "acquisition",
         "purchase": "acquisition",
@@ -532,7 +540,7 @@ class CognitiveOS:
         "transfer": "financial",
     }
 
-    _SUBJECT_GOAL_MAP = {
+    _SUBJECT_GOAL_MAP: ClassVar[dict[str, str]] = {
         "flight": "travel",
         "hotel": "travel",
         "reservation": "travel",
@@ -554,7 +562,6 @@ class CognitiveOS:
         "medicine": "health",
         "money": "financial",
         "payment": "financial",
-        "flight": "travel",
     }
 
     # Rule-based urgency signal — no LLM required for the default path.
@@ -713,6 +720,15 @@ class CognitiveOS:
                     label=intent.raw,
                 )
 
+        # Beliefs added without an attribute accumulate indefinitely (see
+        # Actor.add_belief's revision semantics) — decay once per cognitive
+        # cycle so a long-running actor's belief list doesn't grow forever.
+        # Uses decay_beliefs()'s own default rate; low-confidence beliefs
+        # used within this same run() call are unaffected (they'd need to
+        # already be near-zero confidence to be pruned by one pass).
+        if hasattr(self._actor, 'decay_beliefs'):
+            self._actor.decay_beliefs()
+
         # 2. Evaluate
         cap_matches = self.match_capabilities()
         needed_caps = tuple(m.capability_type_id for m in cap_matches if m.available)
@@ -780,7 +796,7 @@ class CognitiveOS:
         if interrupted:
             reasoning = (
                 f"Interrupted ({interrupt_reason or 'no reason given'}) after "
-                f"{len(step_results)} step(s) — {self.has_suspended_plan() and 'checkpointed' or 'lost checkpoint'}; "
+                f"{len(step_results)} step(s) — {(self.has_suspended_plan() and 'checkpointed') or 'lost checkpoint'}; "
                 f"call resume() to continue."
             )
         else:
@@ -1124,7 +1140,7 @@ class CognitiveOS:
                 wave = await asyncio.gather(*(
                     self._dispatch_step(indexed[n][0], indexed[n][1], command, state) for n in to_run
                 ))
-                for name, sr in zip(to_run, wave):
+                for name, sr in zip(to_run, wave, strict=True):
                     results_by_name[name] = sr
                     step_results.append(sr)
                     remaining.discard(name)
@@ -1158,6 +1174,9 @@ class CognitiveOS:
 
         if self._engine is None:
             return {"error": "No engine injected. Call set_engine() with an ICognitiveEngine implementation."}
+
+        if hasattr(actor, 'decay_beliefs'):
+            actor.decay_beliefs()
 
         try:
             result = await self._engine.tick(actor)

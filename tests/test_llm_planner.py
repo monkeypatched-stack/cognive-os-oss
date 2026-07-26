@@ -4,11 +4,31 @@ matches the rest of tests/ staying zero-dependency. Live verification
 against a real running Ollama is done separately, not in this suite.
 """
 import asyncio
+import json
+import urllib.error
+import urllib.request
 
 import pytest
 
 from cognitiveos import Actor
 from cognitiveos.engine.llm_planner import LLMPlannerEngine
+
+
+class _FakeHTTPResponse:
+    """Minimal stand-in for the object urllib.request.urlopen()'s context
+    manager yields — just enough to satisfy `.read().decode()`."""
+
+    def __init__(self, payload: dict):
+        self._body = json.dumps(payload).encode()
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
 
 
 class TestParseSteps:
@@ -29,7 +49,7 @@ class TestParseSteps:
         assert LLMPlannerEngine._parse_steps('["Boil Water", "ADD TEA"]') == ["boil_water", "add_tea"]
 
     def test_non_list_json_raises(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             LLMPlannerEngine._parse_steps('{"not": "a list"}')
 
 
@@ -92,3 +112,71 @@ class TestLLMPlannerEngineTick:
         result = asyncio.run(engine.tick(actor))
         assert result["success"] is False
         assert "could not reach LLM" in result["error"]
+
+
+class TestGeneratePlanSync:
+    """Covers the real HTTP path (_generate_plan_sync / _generate_plan),
+    hermetically — urllib.request.urlopen is monkeypatched so no live
+    Ollama is contacted, but the actual request-building and
+    response-parsing code runs for real.
+    """
+
+    def test_generate_plan_sync_parses_ollama_style_response(self, monkeypatch):
+        engine = LLMPlannerEngine()
+
+        def fake_urlopen(request, timeout=None):
+            assert request.full_url == "http://127.0.0.1:11434/api/generate"
+            body = json.loads(request.data.decode())
+            assert body["model"] == "gemma3:latest"
+            return _FakeHTTPResponse({"response": '["boil_water", "add_tea"]'})
+
+        monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+        steps = engine._generate_plan_sync("Make tea")
+        assert steps == ["boil_water", "add_tea"]
+
+    def test_generate_plan_sync_wraps_url_error(self, monkeypatch):
+        engine = LLMPlannerEngine()
+
+        def fake_urlopen(request, timeout=None):
+            raise urllib.error.URLError("connection refused")
+
+        monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+        with pytest.raises(RuntimeError, match="could not reach LLM"):
+            engine._generate_plan_sync("Make tea")
+
+    def test_generate_plan_runs_sync_call_off_the_event_loop(self, monkeypatch):
+        """_generate_plan (async) delegates to _generate_plan_sync via
+        run_in_executor — exercise the real async wrapper, not just the
+        sync half."""
+        engine = LLMPlannerEngine()
+
+        def fake_urlopen(request, timeout=None):
+            return _FakeHTTPResponse({"response": '["step_one"]'})
+
+        monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+        steps = asyncio.run(engine._generate_plan("Do a thing"))
+        assert steps == ["step_one"]
+
+    def test_tick_end_to_end_through_real_http_path(self, monkeypatch):
+        """Full tick() -> _generate_plan -> _generate_plan_sync -> urlopen
+        chain, only urlopen itself faked."""
+        engine = LLMPlannerEngine()
+
+        def fake_urlopen(request, timeout=None):
+            return _FakeHTTPResponse({"response": '["boil_water", "serve"]'})
+
+        monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+        actor = Actor(entity_id="alice", actor_type_id="human")
+
+        class FakeIntent:
+            raw = "Make tea"
+
+        actor._current_intent = FakeIntent()
+
+        result = asyncio.run(engine.tick(actor))
+        assert result["success"] is True
+        assert [s["name"] for s in result["plan"]["steps"]] == ["boil_water", "serve"]

@@ -119,7 +119,7 @@ class LLMPlannerEngine:
 
         parsed = json.loads(candidate)
         if not isinstance(parsed, list):
-            raise ValueError(f"expected a JSON array of step names, model returned: {parsed!r}")
+            raise TypeError(f"expected a JSON array of step names, model returned: {parsed!r}")
 
         return [
             re.sub(r"[^a-z0-9_]", "", str(item).strip().lower().replace(" ", "_"))

@@ -9,6 +9,7 @@ derives from this base. It defines the shared metadata pattern:
 Domain extensions subclass this to add domain-specific metadata.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 

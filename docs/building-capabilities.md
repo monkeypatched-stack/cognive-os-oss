@@ -98,37 +98,6 @@ class AdminCapability:
 
 If the execution context doesn't include the required permissions, the bus returns a denied result without calling `.fn()`.
 
-## ICapability Interface
-
-For more structured capabilities, implement the `ICapability` ABC from `cognitiveos.capability_interface`:
-
-```python
-from cognitiveos.capability_interface import ICapability
-from cognitiveos.execution_state import ExecutionState, CapabilityResult
-
-class MyCapability(ICapability):
-    @property
-    def capability_name(self) -> str:
-        return "my_capability"
-
-    @property
-    def capability_type(self) -> str:
-        return "analysis"
-
-    async def execute(self, state: ExecutionState, **kwargs) -> CapabilityResult:
-        # ... do work ...
-        return CapabilityResult(updated_state=state, success=True)
-
-    def can_execute(self, state: ExecutionState) -> bool:
-        return True
-
-    def estimate_reward(self, state: ExecutionState) -> float:
-        return 0.7
-
-    def estimate_cost(self, state: ExecutionState) -> float:
-        return 0.2
-```
-
 ## Full Example
 
 See `examples/api_capability.py` for a real HTTP-backed capability (Open-Meteo weather API).

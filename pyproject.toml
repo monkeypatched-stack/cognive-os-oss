@@ -7,7 +7,8 @@ name = "cognitiveos"
 version = "0.1.0"
 description = "Standalone cognitive runtime for autonomous actors"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = []
 
@@ -20,3 +21,34 @@ include = ["cognitiveos*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+# Superseded code kept only for historical reference — not built, not
+# imported, not shipped (see _archived_dead_code/README.md).
+extend-exclude = ["_archived_dead_code"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF", "DTZ", "TRY004"]
+ignore = [
+    # Broad `except Exception` is a deliberate boundary pattern, not an
+    # oversight: CapabilityBus.execute(), AgentBus.execute(),
+    # ActionExecutor._execute_action(), and CognitiveOS.tick()/run() are all
+    # explicitly documented to "never raise" — failures surface as
+    # success=False results instead of propagating exceptions to the caller.
+    "BLE001",
+    # No formatter (black/ruff format) is configured, and the codebase
+    # predates a line-length convention — enforcing one now would mean
+    # reformatting the whole tree with no behavioral benefit.
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test doubles commonly declare read-only class-level dict/set fixtures
+# (never mutated across instances) — the mutable-default-value warning
+# that matters for real library code is noise here.
+"tests/*" = ["RUF012"]
+# Illustrative integration scripts, not the shipped library — held to a
+# lighter bar than cognitiveos/ itself.
+"examples/*" = ["B008", "BLE001", "UP041", "UP017", "F401"]

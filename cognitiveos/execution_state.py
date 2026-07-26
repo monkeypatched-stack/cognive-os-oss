@@ -15,11 +15,11 @@ Key Principles:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
-from enum import Enum
+from enum import StrEnum
+from typing import Any
 
 
-class ExecutionPhase(str, Enum):
+class ExecutionPhase(StrEnum):
     """Current phase of execution."""
     INITIALIZED = "initialized"
     ENTITY_RESOLUTION = "entity_resolution"
@@ -135,7 +135,7 @@ class ExecutionState:
         """Check if there are any errors."""
         return len(self.errors) > 0
         
-    def get_entity(self, entity_type: str) -> Optional[dict[str, Any]]:
+    def get_entity(self, entity_type: str) -> dict[str, Any] | None:
         """Get a resolved entity by type."""
         return self.resolved_entities.get(entity_type)
     

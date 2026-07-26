@@ -19,7 +19,11 @@ import logging
 from typing import Any
 
 from cognitiveos.engine.belief_state import (
-    BeliefState, Goal, Plan, PlanStep, Fact,
+    BeliefState,
+    Fact,
+    Goal,
+    Plan,
+    PlanStep,
 )
 
 logger = logging.getLogger("agentos.pipeline.planning_engine")
@@ -178,13 +182,15 @@ class DeterministicPlanner:
                 for f in entity_facts:
                     if 'price' in f.attribute.lower() and isinstance(f.value, (int, float)):
                         score *= (1.0 / max(f.value, 0.5))
-                        if f.value < 1.5: risk_note = " [CHEAP]"
+                        if f.value < 1.5:
+                            risk_note = " [CHEAP]"
             elif objective == 'speed':
                 # Favor entities with low distance/delivery time
                 for f in entity_facts:
                     if 'distance' in f.attribute.lower() and isinstance(f.value, (int, float)):
                         score *= (1.0 / max(f.value, 0.5))
-                        if f.value < 2.0: risk_note = " [NEAR]"
+                        if f.value < 2.0:
+                            risk_note = " [NEAR]"
                     if 'delivery' in f.attribute.lower() and isinstance(f.value, (int, float)):
                         score *= (1.0 / max(f.value, 1))
             elif objective == 'reliability':
@@ -194,7 +200,8 @@ class DeterministicPlanner:
                 for f in entity_facts:
                     if 'reliability' in f.attribute.lower() and isinstance(f.value, (int, float)):
                         rel_score = f.value * 0.8
-                        if f.value > 0.85: risk_note = " [TRUSTED]"
+                        if f.value > 0.85:
+                            risk_note = " [TRUSTED]"
                     if 'freshness' in f.attribute.lower() and isinstance(f.value, (int, float)):
                         rel_score += (f.value / 72.0) * 0.2
                 score *= rel_score

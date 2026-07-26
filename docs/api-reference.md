@@ -320,19 +320,6 @@ class ITrustProvider(Protocol):
     def update_trust(self, source, target, outcome) -> None: ...
 ```
 
-### `ICapability`
-
-```python
-class ICapability(ABC):
-    capability_name: str          # abstract property
-    capability_type: str          # abstract property
-    async execute(state, **kwargs) -> CapabilityResult  # abstract
-    can_execute(state) -> bool    # abstract
-    estimate_reward(state) -> float  # abstract
-    estimate_cost(state) -> float    # abstract
-    compute_confidence(state) -> float  # default 0.5
-```
-
 ### `ActorProtocol`
 
 ```python

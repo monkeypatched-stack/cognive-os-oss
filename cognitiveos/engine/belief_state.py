@@ -20,9 +20,8 @@ Stages communicate through BeliefState:
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from typing import Any
-
 
 # ════════════════════════════════════════════════════════════════════════════
 # Supporting Types — frozen value objects (defined before BeliefState)
@@ -389,7 +388,13 @@ class BeliefState:
         for fact in self.facts:
             age_ticks = max(1, (now - fact.observed_at) / 10.0)
             decayed = fact.confidence * ((1.0 - decay_rate) ** age_ticks)
-            clamped = max(decayed, fact_confidence_floor)
+            # fact_confidence_floor is a decay *floor* — it must never raise a
+            # fact's confidence above what it started with. Clamping against
+            # fact_confidence_floor directly (old behavior) inflated any fact
+            # that decayed below the floor up to it, so e.g. a fact observed
+            # at confidence 0.2 came out of a single decay_and_prune() call at
+            # 0.7 — higher than it was before "decaying".
+            clamped = max(decayed, min(fact_confidence_floor, fact.confidence))
             if decayed >= fact_prune_threshold:
                 new_facts.append(Fact(
                     entity=fact.entity, attribute=fact.attribute,
@@ -462,7 +467,7 @@ class BeliefState:
             "uncertainty": asdict(self.uncertainty),
             "plan": asdict(self.plan),
             "predictions": [asdict(p) for p in self.predictions],
-            "learned_updates": [asdict(l) for l in self.learned_updates],
+            "learned_updates": [asdict(lu) for lu in self.learned_updates],
             "working_memory_count": len(self.working_memory),
             "long_term_memory_count": len(self.long_term_memory),
             "metadata": self.metadata,

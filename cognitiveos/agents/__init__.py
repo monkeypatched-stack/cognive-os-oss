@@ -8,6 +8,7 @@ Architecture:
 Agents are NOT stubs. They resolve to real providers or run locally.
 """
 from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 from typing import Any
@@ -34,7 +35,7 @@ class Agent:
     Each agent handles specific intents and delegates to a backend.
     """
 
-    def __init__(self, agent_id: str, capabilities: list[str] = None,
+    def __init__(self, agent_id: str, capabilities: list[str] | None = None,
                  provider: str = "local"):
         self.agent_id = agent_id
         self.capabilities = capabilities or []

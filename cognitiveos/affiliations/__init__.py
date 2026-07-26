@@ -11,21 +11,36 @@ Each affiliation type is a semantic concept with metadata:
     - trust model (growth/decay rates)
     - lifecycle rules (creation, expiration, dissolution)
 """
+from .affiliation import Affiliation
+from .education import EducationAffiliation
+from .employment import EmploymentAffiliation
+from .family import FamilyAffiliation
+from .manager import AffiliationManager
 from .trust import TrustEngine
 from .types import (
-    Cardinality, TrustModel, LifecycleRules, AffiliationType,
-    ALL_TYPES, CATEGORIES, get_type, types_in_category,
+    ALL_TYPES,
+    CATEGORIES,
+    AffiliationType,
+    Cardinality,
+    LifecycleRules,
+    TrustModel,
+    get_type,
+    types_in_category,
 )
-from .affiliation import Affiliation
-from .family import FamilyAffiliation
-from .employment import EmploymentAffiliation
-from .education import EducationAffiliation
-from .manager import AffiliationManager
 
 __all__ = [
+    "ALL_TYPES",
+    "CATEGORIES",
+    "Affiliation",
+    "AffiliationManager",
+    "AffiliationType",
+    "Cardinality",
+    "EducationAffiliation",
+    "EmploymentAffiliation",
+    "FamilyAffiliation",
+    "LifecycleRules",
     "TrustEngine",
-    "Cardinality", "TrustModel", "LifecycleRules", "AffiliationType",
-    "ALL_TYPES", "CATEGORIES", "get_type", "types_in_category",
-    "Affiliation", "AffiliationManager",
-    "FamilyAffiliation", "EmploymentAffiliation", "EducationAffiliation",
+    "TrustModel",
+    "get_type",
+    "types_in_category",
 ]

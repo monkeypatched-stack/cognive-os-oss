@@ -3,7 +3,9 @@
 What exists in the world. The foundational layer that all actors observe.
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
+
 from ..base import OntologyType
 
 

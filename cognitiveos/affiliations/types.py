@@ -9,11 +9,12 @@ Instead of fixed enum values, each affiliation type is a rich object describing:
     - lifecycle (creation, maintenance, dissolution rules)
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class Cardinality(str, Enum):
+class Cardinality(StrEnum):
     ONE_TO_ONE = "one_to_one"       # marriage, guardianship
     ONE_TO_MANY = "one_to_many"     # employer→employees
     MANY_TO_ONE = "many_to_one"     # employee→employer

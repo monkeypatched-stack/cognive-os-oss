@@ -10,22 +10,38 @@ Architecture:
 Core (~133 concepts): Stable, versioned, backward compatible.
 Domain Extensions: Healthcare, manufacturing, finance, etc. (extend core).
 """
+from . import extensions
 from .base import OntologyType
 from .core import (
+    ALL_ACTOR,
+    ALL_AFFILIATIONS,
+    ALL_BELIEFS,
+    ALL_CAPABILITIES,
     ALL_CORE,
-    ALL_WORLD, ALL_ACTOR, ALL_GOALS, ALL_BELIEFS,
-    ALL_AFFILIATIONS, ALL_CAPABILITIES,
-    WorldConcept, ActorConcept, GoalConcept, BeliefConcept,
-    AffiliationConcept, CapabilityConcept,
+    ALL_GOALS,
+    ALL_WORLD,
+    ActorConcept,
+    AffiliationConcept,
+    BeliefConcept,
+    CapabilityConcept,
+    GoalConcept,
+    WorldConcept,
 )
-from . import extensions
 
 __all__ = [
-    "OntologyType",
+    "ALL_ACTOR",
+    "ALL_AFFILIATIONS",
+    "ALL_BELIEFS",
+    "ALL_CAPABILITIES",
     "ALL_CORE",
-    "ALL_WORLD", "ALL_ACTOR", "ALL_GOALS", "ALL_BELIEFS",
-    "ALL_AFFILIATIONS", "ALL_CAPABILITIES",
-    "WorldConcept", "ActorConcept", "GoalConcept", "BeliefConcept",
-    "AffiliationConcept", "CapabilityConcept",
+    "ALL_GOALS",
+    "ALL_WORLD",
+    "ActorConcept",
+    "AffiliationConcept",
+    "BeliefConcept",
+    "CapabilityConcept",
+    "GoalConcept",
+    "OntologyType",
+    "WorldConcept",
     "extensions",
 ]

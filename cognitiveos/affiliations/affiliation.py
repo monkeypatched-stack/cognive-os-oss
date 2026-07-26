@@ -1,6 +1,8 @@
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from .types import AffiliationType, ALL_TYPES
+
+from .types import ALL_TYPES, AffiliationType
 
 
 @dataclass(frozen=True)

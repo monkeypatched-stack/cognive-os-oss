@@ -1,6 +1,5 @@
 """Tests for CognitiveOS Actor."""
-import pytest
-from cognitiveos.actor import Actor, Identity, GoalState, BeliefState, CapabilityState, ResourceState
+from cognitiveos.actor import Actor
 
 
 class TestActorGoals:
@@ -100,6 +99,27 @@ class TestActorCapabilities:
         assert a.has_capability("coding") is True
         assert a.has_capability("diagnosis") is False
 
+    def test_best_capability_picks_highest_proficiency(self):
+        a = Actor(entity_id="a1", actor_type_id="ai_agent")
+        a.add_capability("coding", proficiency=0.4)
+        a.add_capability("coding", proficiency=0.9)
+        best = a.best_capability("coding")
+        assert best.proficiency == 0.9
+
+    def test_best_capability_returns_none_when_no_match(self):
+        a = Actor(entity_id="a1", actor_type_id="ai_agent")
+        assert a.best_capability("coding") is None
+
+
+class TestActorBeliefsByType:
+    def test_beliefs_by_type(self):
+        a = Actor(entity_id="a1", actor_type_id="human")
+        a.add_belief("observation", "market", confidence=0.7)
+        a.add_belief("trust_belief", "bob", confidence=0.5)
+        obs = a.beliefs_by_type("observation")
+        assert len(obs) == 1
+        assert obs[0].subject == "market"
+
 
 class TestActorResources:
     def test_has_resource(self):
@@ -113,6 +133,105 @@ class TestActorResources:
         a.add_resource("money", quantity=500)
         a.add_resource("money", quantity=300)
         assert a.resource_quantity("money") == 800
+
+
+class TestActorWithoutBoundOS:
+    """Actor delegates cognition to self.os — before an OS is bound, these
+    methods must fail honestly rather than raise."""
+
+    def test_tick_without_os_returns_error_dict(self):
+        import asyncio
+        a = Actor(entity_id="a1", actor_type_id="human")
+        result = asyncio.run(a.tick())
+        assert result == {"error": "No CognitiveOS bound to this actor"}
+
+    def test_observe_without_os_returns_none(self):
+        a = Actor(entity_id="a1", actor_type_id="human")
+        assert a.observe() is None
+
+    def test_send_message_without_os_returns_false(self):
+        a = Actor(entity_id="a1", actor_type_id="human")
+        assert a.send_message("bob", "hi") is False
+
+    def test_broadcast_without_os_returns_zero(self):
+        a = Actor(entity_id="a1", actor_type_id="human")
+        assert a.broadcast("hi") == 0
+
+    def test_set_goal(self):
+        a = Actor(entity_id="a1", actor_type_id="human")
+        a.set_goal("wealth")
+        assert a._current_goal == "wealth"
+        a.set_goal(None)
+        assert a._current_goal is None
+
+
+class TestActorWithBoundOS:
+    """Once bound, Actor's cognition proxies genuinely delegate to
+    self.os rather than short-circuiting."""
+
+    def test_tick_delegates_to_os(self):
+        import asyncio
+
+        from cognitiveos import CognitiveOS
+
+        os_ = CognitiveOS()
+        a = Actor(entity_id="a1", actor_type_id="human")
+        os_.set_actor(a)
+
+        class Engine:
+            async def tick(self, actor):
+                return {"delegated": True}
+
+        os_.set_engine(Engine())
+        result = asyncio.run(a.tick())
+        assert result == {"success": True, "result": {"delegated": True}}
+
+    def test_observe_delegates_to_os_world(self):
+        from cognitiveos import CognitiveOS
+
+        world = object()
+        os_ = CognitiveOS(world=world)
+        a = Actor(entity_id="a1", actor_type_id="human")
+        os_.set_actor(a)
+        assert a.observe() is world
+
+    def test_send_message_delegates_to_os(self):
+        from cognitiveos import CognitiveOS
+
+        os_ = CognitiveOS()
+        a = Actor(entity_id="a1", actor_type_id="human")
+        os_.set_actor(a)
+        assert a.send_message("bob", "hi") is True
+
+    def test_broadcast_delegates_to_os(self):
+        from cognitiveos import CognitiveOS
+
+        os_ = CognitiveOS()
+        a = Actor(entity_id="a1", actor_type_id="human")
+        os_.set_actor(a)
+        assert a.broadcast("hi") == 0  # no society_runtime set -> 0 sent, but delegated
+
+
+class TestActorEqualityAndHash:
+    def test_equal_by_entity_id(self):
+        a1 = Actor(entity_id="alice", actor_type_id="human")
+        a2 = Actor(entity_id="alice", actor_type_id="ai_agent")  # different type, same id
+        assert a1 == a2
+        assert hash(a1) == hash(a2)
+
+    def test_not_equal_different_entity_id(self):
+        a1 = Actor(entity_id="alice", actor_type_id="human")
+        a2 = Actor(entity_id="bob", actor_type_id="human")
+        assert a1 != a2
+
+    def test_not_equal_to_non_actor(self):
+        a1 = Actor(entity_id="alice", actor_type_id="human")
+        assert (a1 == "alice") is False
+
+    def test_usable_as_set_member(self):
+        a1 = Actor(entity_id="alice", actor_type_id="human")
+        a2 = Actor(entity_id="alice", actor_type_id="human")
+        assert len({a1, a2}) == 1
 
 
 class TestActorIntegration:

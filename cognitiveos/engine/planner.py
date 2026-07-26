@@ -19,7 +19,7 @@ The engine never knows which planner is active.
 """
 from __future__ import annotations
 
-from typing import Protocol, Any
+from typing import Any, Protocol
 
 from cognitiveos.engine.belief_state import BeliefState, Goal, Plan
 

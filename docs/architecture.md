@@ -104,7 +104,6 @@ cognitiveos/
 ├── execution_state.py    # ExecutionState
 ├── observation.py        # Rule-based fact extraction
 ├── exceptions.py         # Exception hierarchy
-├── capability_interface.py  # ICapability ABC
 ├── engine/
 │   ├── lightweight_engine.py  # Default ICognitiveEngine
 │   ├── llm_planner.py        # LLM-backed ICognitiveEngine

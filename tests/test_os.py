@@ -1,7 +1,9 @@
 """Tests for CognitiveOS."""
-import pytest
 import asyncio
-from cognitiveos import CognitiveOS, Actor, DecisionSynthesis
+
+import pytest
+
+from cognitiveos import Actor, CognitiveOS
 
 
 class TestOwnership:
@@ -89,6 +91,201 @@ class TestPluginArchitecture:
         assert os.has_engine() is False
         os.set_engine(object())
         assert os.has_engine() is True
+
+
+class TestBeliefMaintenance:
+    """Actor.decay_beliefs() previously had zero callers anywhere in the
+    runtime — a long-running actor's subject-only beliefs (no attribute,
+    see Actor.add_belief's revision semantics) would accumulate forever.
+    run() and tick() now call it once per cognitive cycle.
+    """
+
+    def test_run_decays_actor_beliefs(self):
+        os = CognitiveOS()
+        actor = Actor(entity_id="alice", actor_type_id="human")
+        actor.add_belief("observation", "market", confidence=0.05)
+        os.set_actor(actor)
+
+        asyncio.run(os.run("Buy milk"))
+
+        # confidence 0.05 - default decay_rate 0.05 <= 0.01 -> pruned
+        assert actor.beliefs == []
+
+    def test_tick_decays_actor_beliefs(self):
+        class Engine:
+            async def tick(self, actor):
+                return {"plan": {"steps": []}}
+
+        os = CognitiveOS()
+        actor = Actor(entity_id="alice", actor_type_id="human")
+        actor.add_belief("observation", "market", confidence=0.05)
+        os.set_actor(actor)
+        os.set_engine(Engine())
+
+        asyncio.run(os.tick())
+
+        assert actor.beliefs == []
+
+    def test_run_does_not_wipe_beliefs_used_within_the_same_cycle(self):
+        """A single decay pass at default rate shouldn't destroy the
+        reasonably-confident beliefs the same run() call needs to plan
+        with — only near-zero-confidence beliefs are pruned."""
+        os = CognitiveOS()
+        actor = Actor(entity_id="alice", actor_type_id="human", objective="cost")
+        actor.add_belief("pricing", "store_a", attribute="price", value=5, confidence=0.9)
+        os.set_actor(actor)
+
+        result = asyncio.run(os.run("Buy milk"))
+
+        assert any(s["name"] == "process_store_a" for s in result.steps)
+
+
+class TestLocalMessageBusCap:
+    """CognitiveOS._message_bus (used when no society_runtime is set) had
+    no pruning mechanism at all — get_messages() only reads it, so it grew
+    forever. Now capped at MAX_LOCAL_MESSAGE_BUS, oldest dropped first.
+    """
+
+    def test_message_bus_is_capped(self):
+        from cognitiveos.os import MAX_LOCAL_MESSAGE_BUS
+
+        os = CognitiveOS()
+        os.set_actor(Actor(entity_id="alice"))
+        for i in range(MAX_LOCAL_MESSAGE_BUS + 50):
+            os.send_message("bob", "note", {"i": i})
+
+        messages = os.get_messages()
+        assert len(messages) == MAX_LOCAL_MESSAGE_BUS
+        # oldest were dropped — the most recent messages survive
+        assert messages[-1]["payload"]["i"] == MAX_LOCAL_MESSAGE_BUS + 49
+        assert messages[0]["payload"]["i"] == 50
+
+
+class TestTransition:
+    """Regression: transition() used to call self._get_transition_model(),
+    a method that was never defined anywhere in the class — every call
+    raised AttributeError. Fixed to return the actual _transition_model
+    attribute set in __init__.
+    """
+
+    def test_transition_returns_none_by_default(self):
+        os = CognitiveOS()
+        assert os.transition() is None
+
+    def test_transition_does_not_raise(self):
+        os = CognitiveOS()
+        os.set_actor(Actor(entity_id="alice"))
+        os.transition()  # would previously raise AttributeError
+
+
+class TestTickWithRealEngine:
+    def test_tick_returns_success_wrapper_around_engine_result(self):
+        class Engine:
+            async def tick(self, actor):
+                return {"plan": {"steps": []}}
+
+        os = CognitiveOS()
+        os.set_actor(Actor(entity_id="alice"))
+        os.set_engine(Engine())
+        result = asyncio.run(os.tick())
+        assert result["success"] is True
+        assert result["result"] == {"plan": {"steps": []}}
+
+    def test_tick_without_actor_returns_error(self):
+        os = CognitiveOS()
+        os.set_engine(object())
+        result = asyncio.run(os.tick())
+        assert result == {"error": "No actor bound to this CognitiveOS"}
+
+    def test_tick_catches_engine_exception(self):
+        class BrokenEngine:
+            async def tick(self, actor):
+                raise ValueError("planner exploded")
+
+        os = CognitiveOS()
+        os.set_actor(Actor(entity_id="alice"))
+        os.set_engine(BrokenEngine())
+        result = asyncio.run(os.tick())
+        assert result["success"] is False
+        assert "planner exploded" in result["error"]
+
+
+class TestReasoningWithoutActor:
+    def test_evaluate_goals_without_actor_returns_empty(self):
+        os = CognitiveOS()
+        assert os.evaluate_goals() == []
+
+    def test_match_capabilities_without_actor_returns_empty(self):
+        os = CognitiveOS()
+        assert os.match_capabilities() == []
+
+    def test_check_resources_without_actor_returns_empty(self):
+        os = CognitiveOS()
+        assert os.check_resources({"money": 10}) == []
+
+    def test_synthesize_without_actor(self):
+        os = CognitiveOS()
+        decision = os.synthesize()
+        assert decision.selected_goal is None
+        assert decision.reasoning == "No actor bound"
+
+
+class TestReasoningBranches:
+    def test_no_beliefs_is_a_blocker(self):
+        os = CognitiveOS()
+        os.set_actor(Actor(entity_id="alice", actor_type_id="human", goals=["wealth"]))
+        evals = os.evaluate_goals()
+        assert "no_beliefs" in evals[0].blockers
+        assert evals[0].achievable is False
+
+    def test_unavailable_capability_is_a_blocker(self):
+        from cognitiveos.actor import CapabilityState
+
+        os = CognitiveOS()
+        actor = Actor(entity_id="alice", actor_type_id="human", goals=["wealth"])
+        actor.add_belief("observation", "market", confidence=0.7)
+        actor._capabilities.append(
+            CapabilityState(capability_type_id="investment", available=False)
+        )
+        os.set_actor(actor)
+        evals = os.evaluate_goals()
+        assert any(b.startswith("capability_unavailable:") for b in evals[0].blockers)
+        assert evals[0].achievable is False
+
+    def test_resource_with_positive_quantity_bumps_confidence(self):
+        os = CognitiveOS()
+        actor = Actor(entity_id="alice", actor_type_id="human", goals=["wealth"])
+        actor.add_belief("observation", "market", confidence=0.7)
+        actor.add_resource("money", quantity=100)
+        os.set_actor(actor)
+        evals = os.evaluate_goals()
+        assert evals[0].confidence >= 0.3
+
+    def test_synthesize_no_achievable_goals(self):
+        os = CognitiveOS()
+        os.set_actor(Actor(entity_id="alice", actor_type_id="human", goals=["wealth"]))
+        decision = os.synthesize()
+        assert decision.selected_goal is None
+        assert decision.reasoning == "No achievable goals"
+        assert decision.confidence == 0.0
+
+    def test_synthesize_flags_low_trust_affiliations_for_trust_building(self):
+        os = CognitiveOS()
+        actor = Actor(entity_id="alice", actor_type_id="human", goals=["wealth"])
+        actor.add_belief("observation", "market", confidence=0.7)
+        actor.add_capability("investment", proficiency=0.8)
+        actor.add_capability("accounting", proficiency=0.6)
+        actor.add_capability("analysis", proficiency=0.7)
+        actor.add_resource("money", quantity=1000)
+        actor.affiliations.add(type("Aff", (), {
+            "affiliation_id": "f1", "affiliation_type": "community",
+            "target_id": "stranger", "target_name": "Stranger",
+            "trust_level": 0.2, "permissions": (), "policies": (),
+            "priority": 0, "valid_from": "", "valid_until": "", "metadata": {},
+        })())
+        os.set_actor(actor)
+        decision = os.synthesize()
+        assert "build_trust:stranger" in decision.trust_actions
 
 
 class TestRun:
